@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+// import { supabase } from "@/lib/supabase";
+
+import { getAllUsers, inviteUser, User } from "@/modules/users/user.service";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,16 +17,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type User = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  role: string | null;
-  status: string | null;
-  telegram_user_id: number;
-  is_active: boolean;
-  created_at: string;
-};
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -35,46 +28,44 @@ export default function AdminUsersPage() {
   const [telegramId, setTelegramId] = useState("");
 
   async function fetchUsers() {
-    const { data } = await supabase
-      .from("users")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setUsers(data ?? []);
+  try {
+    const data = await getAllUsers();
+    setUsers(data);
+  } catch (err: any) {
+    alert(err.message);
+  } finally {
     setLoading(false);
   }
+}
+
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  async function handleInvite() {
-    if (!name || !telegramId) {
-      alert("Name and Telegram ID are required");
-      return;
-    }
+async function handleInvite() {
+  if (!name || !telegramId) {
+    alert("Name and Telegram ID are required");
+    return;
+  }
 
-    const { error } = await supabase.from("users").insert({
+  try {
+    await inviteUser({
       name,
       email,
       telegram_user_id: Number(telegramId),
-      role: "employee",
-      status: "active",
-      is_active: true,
     });
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    // reset form
     setName("");
     setEmail("");
     setTelegramId("");
 
     fetchUsers();
+  } catch (err: any) {
+    alert(err.message);
   }
+}
+
 
   if (loading) return <p>Loading…</p>;
 
