@@ -1,26 +1,26 @@
 // src/app/layout.tsx
 import "./globals.css";
-import { GeistSans, GeistMono } from 'geist/font';
+import { GeistSans, GeistMono } from "geist/font";
 import { Toaster } from "sonner";
-import { Providers } from '@/components/providers';
+import { Providers } from "@/components/providers";
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html 
-      lang="en" 
-      suppressHydrationWarning 
+    <html
+      lang="en"
+      suppressHydrationWarning
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
-        
         <Providers>
           {children}
-          <Toaster position="top-center" richColors closeButton />
         </Providers>
+
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );

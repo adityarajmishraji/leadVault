@@ -1,9 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/hooks/useAuth";
 import { ModeToggle } from "@/components/ui/ModeToggle";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,23 +11,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, ShieldCheck, Menu } from "lucide-react";
-import { nhost } from "@/lib/nhost";
+import { Bell, Menu } from "lucide-react";
 
 type HeaderProps = {
-  onToggleSidebar?: () => void; // ✅ OPTIONAL
+  onToggleSidebar?: () => void;
 };
 
 export default function Header({ onToggleSidebar }: HeaderProps) {
-  const { user, isAdmin } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await nhost.auth.signOut();
-    router.push("/auth/login");
+  // TEMP user (until Supabase + Telegram auth is wired)
+  const user = {
+    name: "Demo User",
+    email: "demo@leadvault.local",
   };
-
-  if (!user) return null;
 
   return (
     <header className="border-b bg-card px-6 py-4 flex items-center justify-between">
@@ -47,15 +40,11 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
 
         <div>
           <h2 className="text-xl font-semibold">
-            Welcome, {user.displayName || user.email?.split("@")[0]}
+            Welcome, {user.name}
           </h2>
-
-          {isAdmin && (
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              <ShieldCheck className="h-3 w-3" />
-              Admin
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Temporary session
+          </p>
         </div>
       </div>
 
@@ -71,9 +60,8 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-10 w-10 rounded-full">
               <Avatar>
-                <AvatarImage src={user.avatarUrl ?? undefined} />
                 <AvatarFallback>
-                  {user.displayName?.[0] || "U"}
+                  {user.name[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -82,12 +70,11 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-destructive"
-            >
-              Logout
+            <DropdownMenuItem disabled>
+              Profile (coming soon)
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-destructive">
+              Logout (disabled)
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

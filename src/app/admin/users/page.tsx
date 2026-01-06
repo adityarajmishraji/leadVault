@@ -1,8 +1,8 @@
 "use client";
 
-import { gql } from "@apollo/client";
-import { useQuery } from "@apollo/client/react";
-import { apolloClient } from "@/lib/apollo";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,187 +13,121 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { useState } from "react";
-import { Loader2, Mail, UserPlus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-
-/* =======================
-   TYPES
-======================= */
 
 type User = {
   id: string;
-  email: string;
-  display_name: string | null;
-  email_verified: boolean;
+  name: string | null;
+  email: string | null;
+  role: string | null;
+  status: string | null;
+  telegram_user_id: number;
+  is_active: boolean;
   created_at: string;
 };
 
-type GetUsersResponse = {
-  users: User[];
-};
-
-/* =======================
-   GRAPHQL
-======================= */
-
-const GET_USERS = gql`
-  query GetUsers {
-    users {
-      id
-      email
-      display_name
-      email_verified
-      created_at
-    }
-  }
-`;
-
-/* =======================
-   PAGE
-======================= */
-
 export default function AdminUsersPage() {
-  const { data, loading, error, refetch } = useQuery<GetUsersResponse>(
-    GET_USERS,
-    { client: apolloClient }
-  );
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [open, setOpen] = useState(false);
+  // form state
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [telegramId, setTelegramId] = useState("");
 
-  /* =======================
-     ACTIONS
-  ======================= */
+  async function fetchUsers() {
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  const handleInviteUser = async () => {
-    if (!email) return;
+    setUsers(data ?? []);
+    setLoading(false);
+  }
 
-    try {
-      setCreating(true);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-      const res = await fetch("/api/admin/invite-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!res.ok) throw new Error();
-
-      toast.success("Invite link sent 📧", {
-        description: email,
-      });
-
-      setEmail("");
-      setOpen(false);
-      refetch();
-    } catch {
-      toast.error("Failed to send invite");
-    } finally {
-      setCreating(false);
+  async function handleInvite() {
+    if (!name || !telegramId) {
+      alert("Name and Telegram ID are required");
+      return;
     }
-  };
 
-  if (loading) return <p className="text-center mt-10">Loading users...</p>;
-  if (error) return <p className="text-red-500">Error loading users</p>;
+    const { error } = await supabase.from("users").insert({
+      name,
+      email,
+      telegram_user_id: Number(telegramId),
+      role: "employee",
+      status: "active",
+      is_active: true,
+    });
 
-  const users = data?.users ?? [];
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    // reset form
+    setName("");
+    setEmail("");
+    setTelegramId("");
+
+    fetchUsers();
+  }
+
+  if (loading) return <p>Loading…</p>;
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-bold">Manage Users</h1>
+      <h1 className="text-3xl font-bold">Admin Users</h1>
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Invite User
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Invite New User</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4 mt-4">
-              <Input
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-
-              <Button
-                onClick={handleInviteUser}
-                className="w-full"
-                disabled={creating}
-              >
-                {creating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending…
-                  </>
-                ) : (
-                  "Send Invite"
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      {/* INVITE FORM */}
+      <div className="flex gap-4 items-end">
+        <Input
+          placeholder="Full name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Input
+          placeholder="Email (optional)"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <Input
+          placeholder="Telegram User ID"
+          value={telegramId}
+          onChange={(e) => setTelegramId(e.target.value)}
+        />
+        <Button onClick={handleInvite}>Invite</Button>
       </div>
 
-      <div className="bg-card rounded-xl shadow overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Email</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Actions</TableHead>
+      {/* USERS TABLE */}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Telegram ID</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {users.map((u) => (
+            <TableRow key={u.id}>
+              <TableCell>{u.name}</TableCell>
+              <TableCell>{u.email ?? "-"}</TableCell>
+              <TableCell>{u.role}</TableCell>
+              <TableCell>{u.telegram_user_id}</TableCell>
+              <TableCell>
+                {u.is_active ? "✅ Active" : "❌ Disabled"}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">
-                  {user.email}
-                </TableCell>
-                <TableCell>{user.display_name || "-"}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={user.email_verified ? "default" : "secondary"}
-                  >
-                    {user.email_verified ? "Verified" : "Pending"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {new Date(user.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {!user.email_verified && (
-                    <Button variant="ghost" size="sm" disabled>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Waiting
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

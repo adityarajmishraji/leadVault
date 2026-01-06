@@ -1,8 +1,5 @@
 "use client";
 
-import { gql } from "@apollo/client";
-import { useQuery } from "@apollo/client/react";
-import { apolloClient } from "@/lib/apollo";
 import {
   Table,
   TableBody,
@@ -13,59 +10,34 @@ import {
 } from "@/components/ui/table";
 
 /* =======================
-   TYPES
+   TEMP TYPES
 ======================= */
-
-type AuditUser = {
-  email: string | null;
-};
 
 type AuditLog = {
   id: string;
   action: string;
+  created_at: string;
+  user: string;
   old_data: any;
   new_data: any;
-  created_at: string;
-  user: AuditUser | null;
 };
-
-type GetAuditLogsResponse = {
-  audit_logs: AuditLog[];
-};
-
-/* =======================
-   GRAPHQL
-======================= */
-
-const GET_AUDIT_LOGS = gql`
-  query GetAuditLogs {
-    audit_logs(order_by: { created_at: desc }, limit: 50) {
-      id
-      action
-      old_data
-      new_data
-      created_at
-      user {
-        email
-      }
-    }
-  }
-`;
 
 /* =======================
    PAGE
 ======================= */
 
 export default function AuditLogsPage() {
-  const { data, loading, error } = useQuery<GetAuditLogsResponse>(
-    GET_AUDIT_LOGS,
-    { client: apolloClient }
-  );
-
-  if (loading) return <p>Loading logs...</p>;
-  if (error) return <p>Error loading audit logs</p>;
-
-  const logs = data?.audit_logs ?? [];
+  // TEMP static data (until Supabase is wired)
+  const logs: AuditLog[] = [
+    {
+      id: "1",
+      action: "LOGIN",
+      created_at: new Date().toISOString(),
+      user: "demo@leadvault.local",
+      old_data: null,
+      new_data: { method: "telegram" },
+    },
+  ];
 
   if (logs.length === 0) {
     return (
@@ -97,7 +69,7 @@ export default function AuditLogsPage() {
                 <TableCell>
                   {new Date(log.created_at).toLocaleString()}
                 </TableCell>
-                <TableCell>{log.user?.email ?? "Unknown"}</TableCell>
+                <TableCell>{log.user}</TableCell>
                 <TableCell className="font-medium">
                   {log.action}
                 </TableCell>
@@ -112,6 +84,11 @@ export default function AuditLogsPage() {
           </TableBody>
         </Table>
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        ⚠️ Audit logs are temporarily mocked.  
+        This page will be connected to Supabase later.
+      </p>
     </div>
   );
 }
