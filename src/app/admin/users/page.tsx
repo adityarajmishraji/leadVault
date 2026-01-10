@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// import { supabase } from "@/lib/supabase";
 
 import { getAllUsers, inviteUser, User } from "@/modules/users/user.service";
 
@@ -42,6 +41,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchUsers();
   }, []);
+  
 
 async function handleInvite() {
   if (!name || !telegramId) {
